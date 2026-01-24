@@ -109,22 +109,22 @@ async function ingresar() {
 
 function iniciarTabla() {
   tabla = new Tabulator("#tabla", {
-    layout:"fitDataStretch",
-    height:"500px",
-    initialSort:[
-      { column:"Fecha__Actividad", dir:"asc" }
+    layout: "fitDataStretch",
+    height: "500px",
+    initialSort: [
+      { column: "fecha_actividad", dir: "asc" }
     ],
-    columns:[
-      { title:"Delegación", field:"delegacion" },
-      { title:"Ingreso", field:"ingreso_no" },
-      { title:"Nota", field:"nota_no" },
-      { title:"Fecha", field:"Fecha__Activividad" },
-      { title:"Contacto", field:"contacto" },
-      { title:"Teléfono", field:"telefono" },
-      { title:"Solicitud", field:"solicitud" },
-      { title:"Encuesta", field:"encuesta" },
-      { title:"Llegó a tiempo", field:"llego_a_tiempo" },
-      { title:"nota", field:"nota" }
+    columns: [
+      { title: "Delegación", field: "delegacion" },
+      { title: "Ingreso", field: "ingreso_no" },
+      { title: "Nota", field: "nota_no" },
+      { title: "Fecha", field: "fecha_actividad" },
+      { title: "Contacto", field: "contacto" },
+      { title: "Teléfono", field: "telefono" },
+      { title: "Solicitud", field: "solicitud" },
+      { title: "Encuesta", field: "encuesta" },
+      { title: "Llegó a tiempo", field: "llego_a_tiempo" },
+      { title: "Observación", field: "nota" }
     ]
   });
 }
@@ -135,16 +135,16 @@ async function cargar() {
   if (nota.value) {
     consulta = consulta.eq("nota_no", nota.value);
   } else if (anio.value && mes.value) {
-    consulta = consulta
-      .gte("Fecha__Efectividad", `${anio.value}-${mes.value}-01`)
-      .lte("Fecha__Efectividad", `${anio.value}-${mes.value}-31`);
+    const inicio = `${anio.value}-${mes.value.padStart(2,"0")}-01`;
+    const fin = `${anio.value}-${mes.value.padStart(2,"0")}-31`;
+    consulta = consulta.gte("fecha_actividad", inicio).lte("fecha_actividad", fin);
   } else if (anio.value) {
     consulta = consulta
-      .gte("Fecha__Efectividad", `${anio.value}-01-01`)
-      .lte("Fecha__Efectividad", `${anio.value}-12-31`);
+      .gte("fecha_actividad", `${anio.value}-01-01`)
+      .lte("fecha_actividad", `${anio.value}-12-31`);
   }
 
-  const { data, error } = await consulta.order("Fecha__Efectividad", { ascending:true });
+  const { data, error } = await consulta.order("fecha_actividad", { ascending: true });
 
   if (error) {
     alert(error.message);
@@ -162,13 +162,13 @@ async function limpiar() {
   const { data } = await client
     .from("notas")
     .select("*")
-    .order("Fecha__Efectividad", { ascending:true });
+    .order("fecha_actividad", { ascending: true });
 
   tabla.setData(data);
 }
 
 function exportarExcel() {
-  tabla.download("xlsx", "notas_mes.xlsx", { sheetName:"Notas" });
+  tabla.download("xlsx", "notas_filtradas.xlsx", { sheetName: "Notas" });
 }
 
 async function salir() {
@@ -179,4 +179,3 @@ async function salir() {
 
 </body>
 </html>
-
