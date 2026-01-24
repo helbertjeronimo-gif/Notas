@@ -134,11 +134,19 @@ async function cargar() {
 
   if (nota.value) {
     consulta = consulta.eq("nota_no", nota.value);
-  } else if (anio.value && mes.value) {
-    const inicio = `${anio.value}-${mes.value.padStart(2,"0")}-01`;
-    const fin = `${anio.value}-${mes.value.padStart(2,"0")}-31`;
-    consulta = consulta.gte("fecha_actividad", inicio).lte("fecha_actividad", fin);
-  } else if (anio.value) {
+  } 
+  else if (anio.value && mes.value) {
+    const mesFormateado = mes.value.padStart(2, "0");
+    const inicio = `${anio.value}-${mesFormateado}-01`;
+    const siguienteMes = mesFormateado === "12"
+      ? `${parseInt(anio.value) + 1}-01-01`
+      : `${anio.value}-${String(parseInt(mesFormateado) + 1).padStart(2,"0")}-01`;
+
+    consulta = consulta
+      .gte("fecha_actividad", inicio)
+      .lt("fecha_actividad", siguienteMes);
+  } 
+  else if (anio.value) {
     consulta = consulta
       .gte("fecha_actividad", `${anio.value}-01-01`)
       .lte("fecha_actividad", `${anio.value}-12-31`);
@@ -153,6 +161,7 @@ async function cargar() {
 
   tabla.setData(data);
 }
+
 
 async function limpiar() {
   anio.value = "";
@@ -179,3 +188,4 @@ async function salir() {
 
 </body>
 </html>
+
