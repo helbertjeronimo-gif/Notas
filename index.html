@@ -5,7 +5,6 @@
 <title>Visor de Notas</title>
 
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
-
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
@@ -22,49 +21,61 @@ body { font-family: Arial; margin: 20px; }
 <h3>Ingreso</h3>
 <input id="email" type="email" placeholder="Correo"><br><br>
 <input id="password" type="password" placeholder="Contraseña"><br><br>
-<button onclick="login()">Ingresar</button>
+<button id="btnLogin">Ingresar</button>
 <p id="msg"></p>
 </div>
 
 <div id="panel">
 <h3>Consulta de notas</h3>
 
-Año:
-<input id="anio" type="number">
+Año <input id="anio" type="number">
+Mes <input id="mes" type="number" min="1" max="12">
+Nota <input id="nota">
 
-Mes:
-<input id="mes" type="number" min="1" max="12">
-
-Nota:
-<input id="nota">
-
-<button onclick="cargar()">Buscar</button>
+<button id="btnBuscar">Buscar</button>
 
 <div id="tabla" style="margin-top:20px;"></div>
 </div>
 
 <script>
-const supabase = supabase.createClient(
+const client = supabase.createClient(
   "https://dqopyfoshzmsdgrirfku.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxb3B5Zm9zaHptc2RncmlyZmt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNjc1ODIsImV4cCI6MjA4NDg0MzU4Mn0.uMDoJVkCf5k_j4BEroMFp7oYCSFX0TDi1zV-nZIwIeY"
 );
 
+const loginDiv = document.getElementById("login");
+const panelDiv = document.getElementById("panel");
+const msg = document.getElementById("msg");
+
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+
+const anio = document.getElementById("anio");
+const mes = document.getElementById("mes");
+const nota = document.getElementById("nota");
+
 let tabla;
 
-async function login() {
-  const { error } = await supabase.auth.signInWithPassword({
+document.getElementById("btnLogin").addEventListener("click", ingresar);
+document.getElementById("btnBuscar").addEventListener("click", cargar);
+
+async function ingresar() {
+  const { error } = await client.auth.signInWithPassword({
     email: email.value,
     password: password.value
   });
 
   if (error) {
-    msg.innerText = error.message;
+    msg.textContent = error.message;
     return;
   }
 
-  login.style.display = "none";
-  panel.style.display = "block";
+  loginDiv.style.display = "none";
+  panelDiv.style.display = "block";
+  iniciarTabla();
+}
 
+function iniciarTabla() {
   tabla = new Tabulator("#tabla", {
     layout:"fitDataStretch",
     columns:[
@@ -77,31 +88,39 @@ async function login() {
       {title:"Solicitud", field:"solicitud"},
       {title:"Encuesta", field:"encuesta"},
       {title:"Llegó a tiempo", field:"llego_a_tiempo"},
-{title:"nota", field:"nota"}
+      {title:"nota", field:"nota"}
     ]
   });
 }
 
 async function cargar() {
-  let query = supabase.from("notas").select("*");
+  let consulta = client.from("notas").select("*");
 
   if (nota.value) {
-    query = query.eq("nota_no", nota.value);
+    consulta = consulta.eq("nota_no", nota.value);
   }
 
   if (anio.value && mes.value) {
     const inicio = `${anio.value}-${mes.value}-01`;
     const fin = `${anio.value}-${mes.value}-31`;
 
-    query = query
+    consulta = consulta
       .gte("fecha_efectividad", inicio)
       .lte("fecha_efectividad", fin);
   }
 
-  const { data } = await query;
+  const { data, error } = await consulta;
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
   tabla.setData(data);
 }
 </script>
 
 </body>
 </html>
+
+
