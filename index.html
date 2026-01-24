@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Visor de Notas</title>
+
+<link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+
+<style>
+body { font-family: Arial; margin: 20px; }
+#login, #panel { max-width: 900px; margin: auto; }
+#panel { display: none; }
+</style>
+</head>
+
+<body>
+
+<div id="login">
+<h3>Ingreso</h3>
+<input id="email" type="email" placeholder="Correo"><br><br>
+<input id="password" type="password" placeholder="Contraseña"><br><br>
+<button onclick="login()">Ingresar</button>
+<p id="msg"></p>
+</div>
+
+<div id="panel">
+<h3>Consulta de notas</h3>
+
+Año:
+<input id="anio" type="number">
+
+Mes:
+<input id="mes" type="number" min="1" max="12">
+
+Nota:
+<input id="nota">
+
+<button onclick="cargar()">Buscar</button>
+
+<div id="tabla" style="margin-top:20px;"></div>
+</div>
+
+<script>
+const supabase = supabase.createClient(
+  "https://dqopyfoshzmsdgrirfku.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxb3B5Zm9zaHptc2RncmlyZmt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNjc1ODIsImV4cCI6MjA4NDg0MzU4Mn0.uMDoJVkCf5k_j4BEroMFp7oYCSFX0TDi1zV-nZIwIeY"
+);
+
+let tabla;
+
+async function login() {
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email.value,
+    password: password.value
+  });
+
+  if (error) {
+    msg.innerText = error.message;
+    return;
+  }
+
+  login.style.display = "none";
+  panel.style.display = "block";
+
+  tabla = new Tabulator("#tabla", {
+    layout:"fitDataStretch",
+    columns:[
+      {title:"Delegación", field:"delegacion"},
+      {title:"Ingreso", field:"ingreso_no"},
+      {title:"Nota", field:"nota_no"},
+      {title:"Fecha", field:"fecha_efectividad"},
+      {title:"Contacto", field:"contacto"},
+      {title:"Teléfono", field:"telefono"},
+      {title:"Solicitud", field:"solicitud"},
+      {title:"Encuesta", field:"encuesta"},
+      {title:"Llegó a tiempo", field:"llego_a_tiempo"},
+{title:"nota", field:"nota"}
+    ]
+  });
+}
+
+async function cargar() {
+  let query = supabase.from("notas").select("*");
+
+  if (nota.value) {
+    query = query.eq("nota_no", nota.value);
+  }
+
+  if (anio.value && mes.value) {
+    const inicio = `${anio.value}-${mes.value}-01`;
+    const fin = `${anio.value}-${mes.value}-31`;
+
+    query = query
+      .gte("fecha_efectividad", inicio)
+      .lte("fecha_efectividad", fin);
+  }
+
+  const { data } = await query;
+  tabla.setData(data);
+}
+</script>
+
+</body>
+</html>
