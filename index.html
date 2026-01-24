@@ -4,43 +4,67 @@
 <meta charset="UTF-8">
 <title>Visor de Notas</title>
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
+
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
 <style>
-body { font-family: Arial; margin: 20px; }
-#login, #panel { max-width: 900px; margin: auto; }
-#panel { display: none; }
+body { background:#f5f5f5; }
+.card { margin-top:40px; }
 </style>
 </head>
 
 <body>
 
-<div id="login">
-<h3>Ingreso</h3>
-<input id="email" type="email" placeholder="Correo"><br><br>
-<input id="password" type="password" placeholder="Contraseña"><br><br>
-<button id="btnLogin">Ingresar</button>
-<p id="msg"></p>
+<div class="container">
+
+<div id="login" class="card p-4">
+<h4 class="mb-3">Ingreso al sistema</h4>
+
+<input id="email" type="email" class="form-control mb-3" placeholder="Correo">
+<input id="password" type="password" class="form-control mb-3" placeholder="Contraseña">
+
+<button id="btnLogin" class="btn btn-primary">Ingresar</button>
+<p id="msg" class="text-danger mt-2"></p>
 </div>
 
-<div id="panel">
-<h3>Consulta de notas</h3>
+<div id="panel" class="card p-4" style="display:none;">
 
-Año <input id="anio" type="number">
-Mes <input id="mes" type="number" min="1" max="12">
-Nota <input id="nota">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<div>
+Usuario: <strong id="usuario"></strong>
+</div>
+<button id="btnSalir" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
+</div>
 
-<button id="btnBuscar">Buscar</button>
+<div class="row g-2 mb-3">
+<div class="col-md-2">
+<input id="anio" type="number" class="form-control" placeholder="Año">
+</div>
+<div class="col-md-2">
+<input id="mes" type="number" min="1" max="12" class="form-control" placeholder="Mes">
+</div>
+<div class="col-md-3">
+<input id="nota" class="form-control" placeholder="Número de nota">
+</div>
+<div class="col-md-5 text-end">
+<button id="btnBuscar" class="btn btn-success">Buscar</button>
+<button id="btnLimpiar" class="btn btn-secondary">Limpiar</button>
+<button id="btnExcel" class="btn btn-outline-success">Exportar Excel</button>
+</div>
+</div>
 
-<div id="tabla" style="margin-top:20px;"></div>
+<div id="tabla"></div>
+
+</div>
 </div>
 
 <script>
 const client = supabase.createClient(
   "https://dqopyfoshzmsdgrirfku.supabase.co",
-  "sb_publishable_jF6j1GUXTPIroausBVFkHQ__PpLE54x"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxb3B5Zm9zaHptc2RncmlyZmt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNjc1ODIsImV4cCI6MjA4NDg0MzU4Mn0.uMDoJVkCf5k_j4BEroMFp7oYCSFX0TDi1zV-nZIwIeY"
 );
 
 const loginDiv = document.getElementById("login");
@@ -49,15 +73,18 @@ const msg = document.getElementById("msg");
 
 const email = document.getElementById("email");
 const password = document.getElementById("password");
-
 const anio = document.getElementById("anio");
 const mes = document.getElementById("mes");
 const nota = document.getElementById("nota");
+const usuarioTxt = document.getElementById("usuario");
 
 let tabla;
 
 document.getElementById("btnLogin").addEventListener("click", ingresar);
 document.getElementById("btnBuscar").addEventListener("click", cargar);
+document.getElementById("btnLimpiar").addEventListener("click", limpiar);
+document.getElementById("btnExcel").addEventListener("click", exportarExcel);
+document.getElementById("btnSalir").addEventListener("click", salir);
 
 async function ingresar() {
   const { error } = await client.auth.signInWithPassword({
@@ -70,25 +97,34 @@ async function ingresar() {
     return;
   }
 
+  const { data } = await client.auth.getUser();
+  usuarioTxt.textContent = data.user.email.split("@")[0];
+
   loginDiv.style.display = "none";
   panelDiv.style.display = "block";
+
   iniciarTabla();
+  limpiar();
 }
 
 function iniciarTabla() {
   tabla = new Tabulator("#tabla", {
     layout:"fitDataStretch",
+    height:"500px",
+    initialSort:[
+      { column:"Fecha__Efectividad", dir:"asc" }
+    ],
     columns:[
-      {title:"Delegación", field:"delegacion"},
-      {title:"Ingreso", field:"ingreso_no"},
-      {title:"Nota", field:"nota_no"},
-      {title:"Fecha", field:"fecha_efectividad"},
-      {title:"Contacto", field:"contacto"},
-      {title:"Teléfono", field:"telefono"},
-      {title:"Solicitud", field:"solicitud"},
-      {title:"Encuesta", field:"encuesta"},
-      {title:"Llegó a tiempo", field:"llego_a_tiempo"},
-      {title:"nota", field:"nota"}
+      { title:"Delegación", field:"delegacion" },
+      { title:"Ingreso", field:"ingreso_no" },
+      { title:"Nota", field:"nota_no" },
+      { title:"Fecha", field:"Fecha__Efectividad" },
+      { title:"Contacto", field:"contacto" },
+      { title:"Teléfono", field:"telefono" },
+      { title:"Solicitud", field:"solicitud" },
+      { title:"Encuesta", field:"encuesta" },
+      { title:"Llegó a tiempo", field:"llego_a_tiempo" },
+      { title:"Observación", field:"nota" }
     ]
   });
 }
@@ -98,18 +134,17 @@ async function cargar() {
 
   if (nota.value) {
     consulta = consulta.eq("nota_no", nota.value);
-  }
-
-  if (anio.value && mes.value) {
-    const inicio = `${anio.value}-${mes.value}-01`;
-    const fin = `${anio.value}-${mes.value}-31`;
-
+  } else if (anio.value && mes.value) {
     consulta = consulta
-      .gte("fecha_efectividad", inicio)
-      .lte("fecha_efectividad", fin);
+      .gte("Fecha__Efectividad", `${anio.value}-${mes.value}-01`)
+      .lte("Fecha__Efectividad", `${anio.value}-${mes.value}-31`);
+  } else if (anio.value) {
+    consulta = consulta
+      .gte("Fecha__Efectividad", `${anio.value}-01-01`)
+      .lte("Fecha__Efectividad", `${anio.value}-12-31`);
   }
 
-  const { data, error } = await consulta;
+  const { data, error } = await consulta.order("Fecha__Efectividad", { ascending:true });
 
   if (error) {
     alert(error.message);
@@ -118,10 +153,29 @@ async function cargar() {
 
   tabla.setData(data);
 }
+
+async function limpiar() {
+  anio.value = "";
+  mes.value = "";
+  nota.value = "";
+
+  const { data } = await client
+    .from("notas")
+    .select("*")
+    .order("Fecha__Efectividad", { ascending:true });
+
+  tabla.setData(data);
+}
+
+function exportarExcel() {
+  tabla.download("xlsx", "notas_mes.xlsx", { sheetName:"Notas" });
+}
+
+async function salir() {
+  await client.auth.signOut();
+  location.reload();
+}
 </script>
 
 </body>
 </html>
-
-
-
