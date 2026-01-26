@@ -118,7 +118,16 @@ function iniciarTabla() {
       { title: "Delegación", field: "delegacion" },
       { title: "Ingreso", field: "ingreso_no" },
       { title: "Nota", field: "nota_no" },
-      { title: "Fecha", field: "fecha_actividad" },
+      {title: "Fecha", field: "fecha_actividad",
+  formatter: function(cell){
+    const valor = cell.getValue();
+    if (!valor) return "";
+
+    const partes = valor.split("-");
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  }
+},
+
       { title: "Contacto", field: "contacto" },
       { title: "Teléfono", field: "telefono" },
       { title: "Solicitud", field: "solicitud" },
@@ -188,4 +197,5 @@ async function salir() {
 
 </body>
 </html>
+
 
