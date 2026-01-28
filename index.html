@@ -185,11 +185,14 @@ async function cargar() {
   }
 
   if (anio.value && mes.value) {
+
     const m = mes.value.padStart(2, "0");
     const inicio = `${anio.value}-${m}-01`;
-    const siguiente = m === "12"
-      ? `${parseInt(anio.value) + 1}-01-01`
-      : `${anio.value}-${String(parseInt(m) + 1).padStart(2, "0")}-01`;
+
+    const siguiente =
+      m === "12"
+        ? `${parseInt(anio.value) + 1}-01-01`
+        : `${anio.value}-${String(parseInt(m) + 1).padStart(2, "0")}-01`;
 
     consulta = consulta
       .gte(campoFecha, inicio)
@@ -242,6 +245,7 @@ async function salir(){
 
 </body>
 </html>
+
 
 
 
