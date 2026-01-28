@@ -170,30 +170,62 @@ function cambiarModulo(){
   limpiar();
 }
 
-async function cargar(){
-  let tablaDB = modulo.value === "notas" ? "notas" : "alcoholemia";
-  let campoDato = modulo.value === "notas" ? "nota_no" : "hoja_no";
+async function cargar() {
+
+  const esNotas = modulo.value === "notas";
+
+  const tablaDB = esNotas ? "notas" : "alcoholemia";
+  const campoFecha = esNotas ? "fecha_actividad" : "fecha";
+  const campoNumero = esNotas ? "nota_no" : "numero_de_hoja";
 
   let consulta = client.from(tablaDB).select("*");
 
-  if (dato.value) consulta = consulta.eq(campoDato, dato.value);
-
-  if (anio.value && mes.value){
-    const m = mes.value.padStart(2,"0");
-    const ini = `${anio.value}-${m}-01`;
-    const fin = m==="12"?`${parseInt(anio.value)+1}-01-01`:`${anio.value}-${String(parseInt(m)+1).padStart(2,"0")}-01`;
-    consulta = consulta.gte("fecha_actividad",ini).lt("fecha_actividad",fin);
+  if (dato.value) {
+    consulta = consulta.eq(campoNumero, dato.value);
   }
 
-  const { data, error } = await consulta.order("fecha_actividad",{ascending:true});
-  if (error){ alert(error.message); return; }
+  if (anio.value && mes.value) {
+    const m = mes.value.padStart(2, "0");
+    const inicio = `${anio.value}-${m}-01`;
+    const siguiente = m === "12"
+      ? `${parseInt(anio.value) + 1}-01-01`
+      : `${anio.value}-${String(parseInt(m) + 1).padStart(2, "0")}-01`;
+
+    consulta = consulta
+      .gte(campoFecha, inicio)
+      .lt(campoFecha, siguiente);
+  }
+
+  const { data, error } = await consulta.order(campoFecha, { ascending: true });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
   tabla.setData(data);
 }
 
-async function limpiar(){
-  anio.value=""; mes.value=""; dato.value="";
-  let tablaDB = modulo.value === "notas" ? "notas" : "alcoholemia";
-  const { data } = await client.from(tablaDB).select("*").order("fecha_actividad",{ascending:true});
+  async function limpiar() {
+
+  anio.value = "";
+  mes.value = "";
+  dato.value = "";
+
+  const esNotas = modulo.value === "notas";
+  const tablaDB = esNotas ? "notas" : "alcoholemia";
+  const campoFecha = esNotas ? "fecha_actividad" : "fecha";
+
+  const { data, error } = await client
+    .from(tablaDB)
+    .select("*")
+    .order(campoFecha, { ascending: true });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
   tabla.setData(data);
 }
 
@@ -210,5 +242,6 @@ async function salir(){
 
 </body>
 </html>
+
 
 
