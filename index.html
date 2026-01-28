@@ -143,12 +143,15 @@ function iniciarTablaAlcoholemia() {
     height:"500px",
     initialSort:[{column:"fecha_actividad",dir:"asc"}],
     columns:[
-      {title:"Delegación",field:"delegacion"},
-      {title:"Hoja",field:"hoja_no"},
-      {title:"Fecha",field:"fecha_actividad",formatter:formatoFecha},
-      {title:"Conductor",field:"conductor"},
-      {title:"Grados",field:"grados"},
-      {title:"Observación",field:"observacion"}
+      {title:"fecha",field:"fecha",formatter:formatoFecha},
+      {title:"conductor",field:"conductor"},
+      {title:"genero",field:"genero"},
+      {title:"licencia",field:"licencia"},
+      {title:"grados",field:"grados"},
+      {title:"lugar",field:"lugar"},
+      {title:"agente_pmt_a_cargo",field:"agente_pmt_a_cargo"},
+      {title:"numero_de_hoja",field:"numero_de_hoja"},
+      {title:"delegacion",field:"delegacion"}
     ]
   });
 }
@@ -207,3 +210,4 @@ async function salir(){
 
 </body>
 </html>
+
