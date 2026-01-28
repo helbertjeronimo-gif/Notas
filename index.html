@@ -232,9 +232,21 @@ async function cargar() {
   tabla.setData(data);
 }
 
-function exportarExcel(){
-  const nombre = modulo.value==="notas"?"notas.xlsx":"alcoholemia.xlsx";
-  tabla.download("xlsx", nombre);
+function exportarExcel() {
+
+  if (!tabla || tabla.getDataCount() === 0) {
+    alert("No existen registros para exportación");
+    return;
+  }
+
+  const nombreArchivo =
+    modulo.value === "notas"
+      ? "notas.xlsx"
+      : "alcoholemia.xlsx";
+
+  tabla.download("xlsx", nombreArchivo, {
+    sheetName: "Datos"
+  });
 }
 
 async function salir(){
@@ -245,6 +257,7 @@ async function salir(){
 
 </body>
 </html>
+
 
 
 
