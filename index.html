@@ -10,6 +10,7 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 
 <style>
@@ -61,7 +62,6 @@ body { background:#f5f5f5; }
 <div class="col-md-5 text-end">
 <button id="btnBuscar" class="btn btn-success">Buscar</button>
 <button id="btnLimpiar" class="btn btn-secondary">Limpiar</button>
-<button id="btnExcel" class="btn btn-outline-success">Exportar Excel</button>
 <button onclick="exportarExcel()">Exportar Excel</button>
 </div>
 </div>
@@ -118,6 +118,16 @@ async function ingresar() {
 
   iniciarTablaNotas();
   limpiar();
+}
+
+  function valorPlano(valor) {
+  return valor === null ? "" : valor;
+}
+
+function fechaDMY(valor) {
+  if (!valor) return "";
+  const p = valor.split("-");
+  return `${p[2]}/${p[1]}/${p[0]}`;
 }
 
 function iniciarTablaNotas() {
@@ -235,6 +245,45 @@ async function cargar() {
   tabla.setData(data);
 }
 
+  function limpiarNulos(registro) {
+  const limpio = {};
+  for (const campo in registro) {
+    limpio[campo] = registro[campo] === null ? '' : registro[campo];
+  }
+  return limpio;
+}
+
+  const { data, error } = await supabase
+  .from('notas') // o alcoholemia
+  .select('*');
+
+if (error) {
+  console.error(error);
+  return;
+}
+
+const datosLimpios = data.map(limpiarNulos);
+
+
+  function formatearFecha(fecha) {
+  if (!fecha) return '';
+  const partes = fecha.split('-');
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+  const datosFinales = datosLimpios.map(item => ({
+  ...item,
+  fecha: formatearFecha(item.fecha)
+}));
+
+  datosFinales.sort((a, b) => {
+  if (!a.fecha || !b.fecha) return 0;
+  const fa = new Date(a.fecha.split('/').reverse().join('-'));
+  const fb = new Date(b.fecha.split('/').reverse().join('-'));
+  return fa - fb;
+});
+
+
 function exportarExcel() {
 
   if (!tabla || tabla.getDataCount() === 0) {
@@ -260,6 +309,7 @@ async function salir(){
 
 </body>
 </html>
+
 
 
 
