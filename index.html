@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Hojas de trabajo</title>
+<title>Visor Institucional</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
@@ -11,9 +11,8 @@
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
 
 <style>
-body { background:#f4f6f8; }
-.card { margin-top:30px; }
-.hidden { display:none; }
+body { background:#f5f5f5; }
+.card { margin-top:40px; }
 </style>
 </head>
 
@@ -23,47 +22,45 @@ body { background:#f4f6f8; }
 
 <!-- LOGIN -->
 <div id="login" class="card p-4">
-<h4>Ingreso al sistema</h4>
-
-<input id="email" type="email" class="form-control mb-2" placeholder="Correo">
+<h4 class="mb-3">Ingreso al sistema</h4>
+<input id="email" type="email" class="form-control mb-3" placeholder="Correo">
 <input id="password" type="password" class="form-control mb-3" placeholder="Contraseña">
-
-<button class="btn btn-primary" onclick="login()">Ingresar</button>
+<button id="btnLogin" class="btn btn-primary">Ingresar</button>
 <p id="msg" class="text-danger mt-2"></p>
 </div>
 
-<!-- SELECTOR -->
-<div id="selector" class="card p-4 hidden">
-<div class="d-flex justify-content-between mb-3">
-<div>Usuario: <strong id="usuario"></strong></div>
-<button class="btn btn-outline-danger btn-sm" onclick="logout()">Cerrar sesión</button>
-</div>
-
-<h5>Seleccione módulo</h5>
-
-<div class="d-flex gap-3 mt-3">
-<button class="btn btn-success" onclick="abrirNotas()">Notas</button>
-<button class="btn btn-warning" onclick="abrirAlcohol()">Alcoholemia</button>
-</div>
-</div>
-
 <!-- PANEL -->
-<div id="panel" class="card p-4 hidden">
+<div id="panel" class="card p-4" style="display:none;">
 
-<div class="d-flex justify-content-between mb-3">
-<h5 id="titulo"></h5>
-<div>
-<button class="btn btn-secondary btn-sm" onclick="volver()">Volver</button>
-<button class="btn btn-outline-danger btn-sm" onclick="logout()">Cerrar sesión</button>
-</div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+<div>Usuario: <strong id="usuario"></strong></div>
+<button id="btnSalir" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
 </div>
 
-<div id="filtros" class="row g-2 mb-3"></div>
+<!-- SELECTOR -->
+<div class="mb-3">
+<select id="modulo" class="form-select">
+<option value="notas">Notas</option>
+<option value="alcoholemia">Alcoholemia</option>
+</select>
+</div>
 
-<div class="mb-2">
-<button class="btn btn-success" onclick="buscar()">Buscar</button>
-<button class="btn btn-secondary" onclick="limpiar()">Limpiar</button>
-<button class="btn btn-outline-success" onclick="exportar()">Exportar Excel</button>
+<!-- FILTROS -->
+<div class="row g-2 mb-3">
+<div class="col-md-2">
+<input id="anio" type="number" class="form-control" placeholder="Año">
+</div>
+<div class="col-md-2">
+<input id="mes" type="number" min="1" max="12" class="form-control" placeholder="Mes">
+</div>
+<div class="col-md-3">
+<input id="dato" class="form-control" placeholder="Nota / Hoja">
+</div>
+<div class="col-md-5 text-end">
+<button id="btnBuscar" class="btn btn-success">Buscar</button>
+<button id="btnLimpiar" class="btn btn-secondary">Limpiar</button>
+<button id="btnExcel" class="btn btn-outline-success">Exportar Excel</button>
+</div>
 </div>
 
 <div id="tabla"></div>
@@ -72,175 +69,139 @@ body { background:#f4f6f8; }
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
+const client = supabase.createClient(
   "https://dqopyfoshzmsdgrirfku.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxb3B5Zm9zaHptc2RncmlyZmt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNjc1ODIsImV4cCI6MjA4NDg0MzU4Mn0.uMDoJVkCf5k_j4BEroMFp7oYCSFX0TDi1zV-nZIwIeY"
 );
 
+const loginDiv = document.getElementById("login");
+const panelDiv = document.getElementById("panel");
+const msg = document.getElementById("msg");
+
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+const usuarioTxt = document.getElementById("usuario");
+
+const anio = document.getElementById("anio");
+const mes = document.getElementById("mes");
+const dato = document.getElementById("dato");
+const modulo = document.getElementById("modulo");
+
 let tabla;
-let modulo = "";
 
-/* ---------- SESIÓN ---------- */
+document.getElementById("btnLogin").addEventListener("click", ingresar);
+document.getElementById("btnBuscar").addEventListener("click", cargar);
+document.getElementById("btnLimpiar").addEventListener("click", limpiar);
+document.getElementById("btnExcel").addEventListener("click", exportarExcel);
+document.getElementById("btnSalir").addEventListener("click", salir);
+modulo.addEventListener("change", cambiarModulo);
 
-async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+async function ingresar() {
+  const { error } = await client.auth.signInWithPassword({
+    email: email.value,
+    password: password.value
+  });
 
   if (error) {
     msg.textContent = error.message;
     return;
   }
 
-  const { data } = await supabase.auth.getUser();
-  usuario.textContent = data.user.email;
+  const { data } = await client.auth.getUser();
+  usuarioTxt.textContent = data.user.email.split("@")[0];
 
-  loginDiv(false);
+  loginDiv.style.display = "none";
+  panelDiv.style.display = "block";
+
+  iniciarTablaNotas();
+  limpiar();
 }
 
-async function logout() {
-  await supabase.auth.signOut();
-  location.reload();
-}
-
-function loginDiv(ok) {
-  login.classList.toggle("hidden", ok);
-  selector.classList.toggle("hidden", !ok);
-}
-
-supabase.auth.getUser().then(({ data }) => {
-  if (data.user) {
-    usuario.textContent = data.user.email;
-    loginDiv(true);
-  }
-});
-
-/* ---------- NAVEGACIÓN ---------- */
-
-function abrirNotas() {
-  modulo = "notas";
-  titulo.textContent = "Consulta de Notas";
-  crearFiltrosNotas();
-  crearTablaNotas();
-  mostrarPanel();
-}
-
-function abrirAlcohol() {
-  modulo = "alcoholemia";
-  titulo.textContent = "Consulta de Alcoholemia";
-  crearFiltrosAlcohol();
-  crearTablaAlcohol();
-  mostrarPanel();
-}
-
-function volver() {
-  panel.classList.add("hidden");
-  selector.classList.remove("hidden");
-}
-
-function mostrarPanel() {
-  selector.classList.add("hidden");
-  panel.classList.remove("hidden");
-}
-
-/* ---------- FILTROS ---------- */
-
-function crearFiltrosNotas() {
-  filtros.innerHTML = `
-  <div class="col-md-2"><input id="anio" class="form-control" placeholder="Año"></div>
-  <div class="col-md-2"><input id="mes" class="form-control" placeholder="Mes"></div>
-  <div class="col-md-3"><input id="nota" class="form-control" placeholder="Número de nota"></div>`;
-}
-
-function crearFiltrosAlcohol() {
-  filtros.innerHTML = `
-  <div class="col-md-3"><input id="anio" class="form-control" placeholder="Año"></div>
-  <div class="col-md-3"><input id="mes" class="form-control" placeholder="Mes"></div>
-  <div class="col-md-3"><input id="hoja" class="form-control" placeholder="Número de hoja"></div>`;
-}
-
-/* ---------- TABLAS ---------- */
-
-function crearTablaNotas() {
+function iniciarTablaNotas() {
   tabla = new Tabulator("#tabla", {
-    height:"450px",
-    layout:"fitDataStretch",
+    layout: "fitDataStretch",
+    height: "500px",
+    initialSort:[{column:"fecha_actividad",dir:"asc"}],
     columns:[
-      {title:"Delegación", field:"delegacion"},
-      {title:"Ingreso", field:"ingreso_no"},
-      {title:"Nota", field:"nota_no"},
-      {title:"Fecha", field:"fecha_actividad", formatter:formatoFecha},
-      {title:"Contacto", field:"contacto"},
-      {title:"Teléfono", field:"telefono"},
-      {title:"Solicitud", field:"solicitud"},
-      {title:"Encuesta", field:"encuesta"},
-      {title:"Llegó a tiempo", field:"llego_a_tiempo"},
-      {title:"Observación", field:"nota"}
+      {title:"Delegación",field:"delegacion"},
+      {title:"Ingreso",field:"ingreso_no"},
+      {title:"Nota",field:"nota_no"},
+      {title:"Fecha",field:"fecha_actividad",formatter:formatoFecha},
+      {title:"Contacto",field:"contacto"},
+      {title:"Teléfono",field:"telefono"},
+      {title:"Solicitud",field:"solicitud"},
+      {title:"Encuesta",field:"encuesta"},
+      {title:"Llegó",field:"llego_a_tiempo"},
+      {title:"Observación",field:"nota"}
     ]
   });
 }
 
-function crearTablaAlcohol() {
+function iniciarTablaAlcoholemia() {
   tabla = new Tabulator("#tabla", {
-    height:"450px",
     layout:"fitDataStretch",
+    height:"500px",
+    initialSort:[{column:"fecha_actividad",dir:"asc"}],
     columns:[
-      {title:"Fecha", field:"fecha", formatter:formatoFecha},
-      {title:"Conductor", field:"conductor"},
-      {title:"Género", field:"genero"},
-      {title:"Licencia", field:"licencia"},
-      {title:"Grados", field:"grados"},
-      {title:"Lugar", field:"lugar"},
-      {title:"Agente", field:"agente_pmt_a_cargo"},
-      {title:"Hoja", field:"numero_de_hoja"},
-      {title:"Delegación", field:"delegacion"}
+      {title:"Delegación",field:"delegacion"},
+      {title:"Hoja",field:"hoja_no"},
+      {title:"Fecha",field:"fecha_actividad",formatter:formatoFecha},
+      {title:"Conductor",field:"conductor"},
+      {title:"Grados",field:"grados"},
+      {title:"Observación",field:"observacion"}
     ]
   });
 }
 
-/* ---------- CONSULTAS ---------- */
-
-async function buscar() {
-  let q = supabase.from(modulo).select("*");
-
-  const anio = document.getElementById("anio")?.value;
-  const mes = document.getElementById("mes")?.value;
-
-  if (modulo === "notas" && document.getElementById("nota")?.value) {
-    q = q.eq("nota_no", document.getElementById("nota").value);
-  }
-
-  if (modulo === "alcoholemia" && document.getElementById("hoja")?.value) {
-    q = q.eq("numero_de_hoja", document.getElementById("hoja").value);
-  }
-
-  if (anio && mes) {
-    const m = mes.padStart(2,"0");
-    q = q.gte("fecha", `${anio}-${m}-01`)
-         .lt("fecha", `${anio}-${parseInt(m)+1}-01`);
-  }
-
-  const { data, error } = await q;
-
-  if (error) alert(error.message);
-  else tabla.setData(data);
-}
-
-async function limpiar() {
-  const { data } = await supabase.from(modulo).select("*");
-  tabla.setData(data);
-}
-
-function exportar() {
-  tabla.download("xlsx", `${modulo}.xlsx`);
-}
-
-function formatoFecha(cell) {
+function formatoFecha(cell){
   const v = cell.getValue();
   if (!v) return "";
   const p = v.split("-");
   return `${p[2]}/${p[1]}/${p[0]}`;
+}
+
+function cambiarModulo(){
+  tabla.destroy();
+  if (modulo.value === "notas") iniciarTablaNotas();
+  else iniciarTablaAlcoholemia();
+  limpiar();
+}
+
+async function cargar(){
+  let tablaDB = modulo.value === "notas" ? "notas" : "alcoholemia";
+  let campoDato = modulo.value === "notas" ? "nota_no" : "hoja_no";
+
+  let consulta = client.from(tablaDB).select("*");
+
+  if (dato.value) consulta = consulta.eq(campoDato, dato.value);
+
+  if (anio.value && mes.value){
+    const m = mes.value.padStart(2,"0");
+    const ini = `${anio.value}-${m}-01`;
+    const fin = m==="12"?`${parseInt(anio.value)+1}-01-01`:`${anio.value}-${String(parseInt(m)+1).padStart(2,"0")}-01`;
+    consulta = consulta.gte("fecha_actividad",ini).lt("fecha_actividad",fin);
+  }
+
+  const { data, error } = await consulta.order("fecha_actividad",{ascending:true});
+  if (error){ alert(error.message); return; }
+  tabla.setData(data);
+}
+
+async function limpiar(){
+  anio.value=""; mes.value=""; dato.value="";
+  let tablaDB = modulo.value === "notas" ? "notas" : "alcoholemia";
+  const { data } = await client.from(tablaDB).select("*").order("fecha_actividad",{ascending:true});
+  tabla.setData(data);
+}
+
+function exportarExcel(){
+  const nombre = modulo.value==="notas"?"notas.xlsx":"alcoholemia.xlsx";
+  tabla.download("xlsx", nombre);
+}
+
+async function salir(){
+  await client.auth.signOut();
+  location.reload();
 }
 </script>
 
