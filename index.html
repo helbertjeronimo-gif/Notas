@@ -141,7 +141,7 @@ function iniciarTablaAlcoholemia() {
   tabla = new Tabulator("#tabla", {
     layout:"fitDataStretch",
     height:"500px",
-    initialSort:[{column:"fecha_actividad",dir:"asc"}],
+    initialSort:[{column:"fecha",dir:"asc"}],
     columns:[
       {title:"fecha",field:"fecha",formatter:formatoFecha},
       {title:"conductor",field:"conductor"},
@@ -210,4 +210,5 @@ async function salir(){
 
 </body>
 </html>
+
 
