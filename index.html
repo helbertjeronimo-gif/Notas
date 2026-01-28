@@ -9,6 +9,8 @@
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
 
 <style>
 body { background:#f5f5f5; }
@@ -60,6 +62,7 @@ body { background:#f5f5f5; }
 <button id="btnBuscar" class="btn btn-success">Buscar</button>
 <button id="btnLimpiar" class="btn btn-secondary">Limpiar</button>
 <button id="btnExcel" class="btn btn-outline-success">Exportar Excel</button>
+<button onclick="exportarExcel()">Exportar Excel</button>
 </div>
 </div>
 
@@ -257,6 +260,7 @@ async function salir(){
 
 </body>
 </html>
+
 
 
 
