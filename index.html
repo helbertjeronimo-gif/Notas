@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Visor de Notas</title>
+<title>Visor</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
@@ -12,7 +12,8 @@
 
 <style>
 body { background:#f5f5f5; }
-.card { margin-top:40px; }
+.card { margin-top:40px; cursor:pointer; }
+.card-select:hover { background:#f0f8ff; }
 </style>
 </head>
 
@@ -20,6 +21,7 @@ body { background:#f5f5f5; }
 
 <div class="container">
 
+<!-- LOGIN -->
 <div id="login" class="card p-4">
 <h4 class="mb-3">Ingreso al sistema</h4>
 
@@ -30,12 +32,28 @@ body { background:#f5f5f5; }
 <p id="msg" class="text-danger mt-2"></p>
 </div>
 
+<!-- SELECCIÓN -->
+<div id="selector" class="row" style="display:none;">
+<div class="col-md-6">
+<div class="card p-4 card-select text-center" onclick="seleccionarModulo('notas')">
+<h5>📄 Visor de Notas</h5>
+<p>Consulta por fecha o número de nota</p>
+</div>
+</div>
+
+<div class="col-md-6">
+<div class="card p-4 card-select text-center" onclick="seleccionarModulo('alcoholemia')">
+<h5>🚓 Visor de Alcoholemia</h5>
+<p>Consulta registros de alcoholemia</p>
+</div>
+</div>
+</div>
+
+<!-- PANEL -->
 <div id="panel" class="card p-4" style="display:none;">
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-<div>
-Usuario: <strong id="usuario"></strong>
-</div>
+<div>Usuario: <strong id="usuario"></strong></div>
 <button id="btnSalir" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
 </div>
 
@@ -47,7 +65,7 @@ Usuario: <strong id="usuario"></strong>
 <input id="mes" type="number" min="1" max="12" class="form-control" placeholder="Mes">
 </div>
 <div class="col-md-3">
-<input id="nota" class="form-control" placeholder="Número de nota">
+<input id="nota" class="form-control" placeholder="Número">
 </div>
 <div class="col-md-5 text-end">
 <button id="btnBuscar" class="btn btn-success">Buscar</button>
@@ -67,18 +85,8 @@ const client = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxb3B5Zm9zaHptc2RncmlyZmt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNjc1ODIsImV4cCI6MjA4NDg0MzU4Mn0.uMDoJVkCf5k_j4BEroMFp7oYCSFX0TDi1zV-nZIwIeY"
 );
 
-const loginDiv = document.getElementById("login");
-const panelDiv = document.getElementById("panel");
-const msg = document.getElementById("msg");
-
-const email = document.getElementById("email");
-const password = document.getElementById("password");
-const anio = document.getElementById("anio");
-const mes = document.getElementById("mes");
-const nota = document.getElementById("nota");
-const usuarioTxt = document.getElementById("usuario");
-
 let tabla;
+let modoActual = "";
 
 document.getElementById("btnLogin").addEventListener("click", ingresar);
 document.getElementById("btnBuscar").addEventListener("click", cargar);
@@ -98,95 +106,98 @@ async function ingresar() {
   }
 
   const { data } = await client.auth.getUser();
-  usuarioTxt.textContent = data.user.email.split("@")[0];
+  usuario.textContent = data.user.email.split("@")[0];
 
-  loginDiv.style.display = "none";
-  panelDiv.style.display = "block";
+  login.style.display = "none";
+  selector.style.display = "flex";
+}
 
+function seleccionarModulo(modo) {
+  modoActual = modo;
+  selector.style.display = "none";
+  panel.style.display = "block";
   iniciarTabla();
   limpiar();
 }
 
 function iniciarTabla() {
-  tabla = new Tabulator("#tabla", {
-    layout: "fitDataStretch",
-    height: "500px",
-    initialSort: [
-      { column: "fecha_actividad", dir: "asc" }
-    ],
-    columns: [
-      { title: "Delegación", field: "delegacion" },
-      { title: "Ingreso", field: "ingreso_no" },
-      { title: "Nota", field: "nota_no" },
-      {title: "Fecha", field: "fecha_actividad",
-  formatter: function(cell){
-    const valor = cell.getValue();
-    if (!valor) return "";
+  if (tabla) tabla.destroy();
 
-    const partes = valor.split("-");
-    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  if (modoActual === "notas") {
+    tabla = new Tabulator("#tabla", {
+      layout:"fitDataStretch",
+      height:"500px",
+      initialSort:[{ column:"fecha_actividad", dir:"asc" }],
+      columns:[
+        { title:"Delegación", field:"delegacion" },
+        { title:"Ingreso", field:"ingreso_no" },
+        { title:"Nota", field:"nota_no" },
+        { title:"Fecha", field:"fecha_actividad",
+          formatter(cell){
+            const v = cell.getValue().split("-");
+            return `${v[2]}/${v[1]}/${v[0]}`;
+          }
+        },
+        { title:"Contacto", field:"contacto" },
+        { title:"Teléfono", field:"telefono" },
+        { title:"Observación", field:"nota" }
+      ]
+    });
   }
-},
 
-      { title: "Contacto", field: "contacto" },
-      { title: "Teléfono", field: "telefono" },
-      { title: "Solicitud", field: "solicitud" },
-      { title: "Encuesta", field: "encuesta" },
-      { title: "Llegó a tiempo", field: "llego_a_tiempo" },
-      { title: "Observación", field: "nota" }
-    ]
-  });
+  if (modoActual === "alcoholemia") {
+    tabla = new Tabulator("#tabla", {
+      layout:"fitDataStretch",
+      height:"500px",
+      initialSort:[{ column:"fecha_actividad", dir:"asc" }],
+      columns:[
+        { title:"Fecha", field:"fecha_actividad",
+          formatter(cell){
+            const v = cell.getValue().split("-");
+            return `${v[2]}/${v[1]}/${v[0]}`;
+          }
+        },
+        { title:"Conductor", field:"conductor" },
+        { title:"Género", field:"genero" },
+        { title:"Licencia", field:"licencia" },
+        { title:"Grados", field:"grados" },
+        { title:"Lugar", field:"lugar" },
+        { title:"Agente", field:"agente" },
+        { title:"Hoja", field:"hoja" },
+        { title:"Delegación", field:"delegacion" }
+      ]
+    });
+  }
 }
 
 async function cargar() {
-  let consulta = client.from("notas").select("*");
+  let tablaDB = modoActual === "notas" ? "notas" : "alcoholemia";
+  let consulta = client.from(tablaDB).select("*");
 
-  if (nota.value) {
-    consulta = consulta.eq("nota_no", nota.value);
-  } 
-  else if (anio.value && mes.value) {
-    const mesFormateado = mes.value.padStart(2, "0");
-    const inicio = `${anio.value}-${mesFormateado}-01`;
-    const siguienteMes = mesFormateado === "12"
-      ? `${parseInt(anio.value) + 1}-01-01`
-      : `${anio.value}-${String(parseInt(mesFormateado) + 1).padStart(2,"0")}-01`;
-
+  if (anio.value && mes.value) {
+    const m = mes.value.padStart(2,"0");
     consulta = consulta
-      .gte("fecha_actividad", inicio)
-      .lt("fecha_actividad", siguienteMes);
-  } 
-  else if (anio.value) {
-    consulta = consulta
-      .gte("fecha_actividad", `${anio.value}-01-01`)
-      .lte("fecha_actividad", `${anio.value}-12-31`);
+      .gte("fecha_actividad", `${anio.value}-${m}-01`)
+      .lt("fecha_actividad", `${anio.value}-${parseInt(m)+1}-01`);
   }
 
-  const { data, error } = await consulta.order("fecha_actividad", { ascending: true });
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
+  const { data } = await consulta.order("fecha_actividad",{ ascending:true });
   tabla.setData(data);
 }
-
 
 async function limpiar() {
   anio.value = "";
   mes.value = "";
   nota.value = "";
 
-  const { data } = await client
-    .from("notas")
-    .select("*")
-    .order("fecha_actividad", { ascending: true });
-
+  const tablaDB = modoActual === "notas" ? "notas" : "alcoholemia";
+  const { data } = await client.from(tablaDB).select("*").order("fecha_actividad",{ ascending:true });
   tabla.setData(data);
 }
 
 function exportarExcel() {
-  tabla.download("xlsx", "notas_filtradas.xlsx", { sheetName: "Notas" });
+  const nombre = modoActual === "notas" ? "notas.xlsx" : "alcoholemia.xlsx";
+  tabla.download("xlsx", nombre, { sheetName:"Datos" });
 }
 
 async function salir() {
@@ -197,5 +208,3 @@ async function salir() {
 
 </body>
 </html>
-
-
